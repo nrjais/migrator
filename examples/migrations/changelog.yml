@@ -1,0 +1,2 @@
+channgelog:
+  - { file: changes/1_create_table.yml }

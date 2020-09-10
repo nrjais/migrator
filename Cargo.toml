@@ -1,0 +1,10 @@
+[package]
+name = "migrator"
+version = "0.1.0"
+authors = ["Neeraj Jaiswal <neerajj85@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+barrel = { version = "*", path = "../barrel" }
+serde = "1.0"
+serde_yaml = "0.8"
