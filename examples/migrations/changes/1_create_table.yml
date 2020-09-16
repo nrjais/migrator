@@ -1,6 +1,0 @@
-id: 1
-change:
-  create_table:
-    name: test
-    columns:
-      - { name: id, type: number }
