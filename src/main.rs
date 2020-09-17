@@ -2,6 +2,7 @@ use migrations::{ChangeLog, Migration};
 use std::{error::Error, fs};
 
 pub(crate) mod migrations;
+pub(crate) mod backend;
 
 const FILE_PATH: &'static str = "examples/migrations/changelog.toml";
 const MIGRATION_PATH: &'static str = "examples/migrations/changes/create_table.toml";
