@@ -3,26 +3,27 @@ id = 1
 [[change]]
 dialect = "psql"
 repeatable = true
-
-[[change.up]]
-# Only one of these three allowed
-query = "create table some_table"
+[change.up]
 queries = ["create table some_table", "create table some_table2"]
-sqlDataFile = { path = "./sql/file.sql" }
-# Optional
-[[change.down]]
-query = """
-droop table some_table
-"""
+# sql_file = { path = "./sql/file.sql", new_line_delimeted = true }
 
 [[change]]
 dialect = "mysql"
 
-[[change.up]]
+[change.up]
+queries = ["SELECT * from some_table"]
+[change.down]
 query = """
 SELECT * from some_table
 """
-[[change.down]]
+
+[[change]]
+dialect = "sqlite"
+
+[change.up]
+sql_file = { path = "./sql/file.sql", new_line_delimited = false }
+
+[change.down]
 query = """
 SELECT * from some_table
 """
