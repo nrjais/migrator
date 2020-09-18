@@ -1,4 +1,5 @@
-use super::{Backend, Result};
+use super::Backend;
+use crate::Result;
 use parking_lot::Mutex;
 use std::io::Write;
 use std::{

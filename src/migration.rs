@@ -1,16 +1,6 @@
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
-pub struct ChangeLog {
-    include: Vec<IncludePath>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct IncludePath {
-    path: String,
-}
-
-#[derive(Deserialize, Debug)]
 pub struct Migration {
     id: u32,
     change: Vec<ChangeSet>,
