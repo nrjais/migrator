@@ -1,0 +1,31 @@
+use crate::{
+    migration::Migration,
+    traits::{Backend, DbMigration, Executor},
+    Result,
+};
+
+pub struct DummyBackend<T: Executor>(T);
+
+impl<T: Executor> DummyBackend<T> {
+    pub fn new(e: T) -> Self {
+        Self(e)
+    }
+}
+
+impl<T: Executor> Backend for DummyBackend<T> {
+    fn ensure_migration_table(&mut self) -> Result<()> {
+        Ok(())
+    }
+
+    fn existing_migrations(&self) -> Result<Vec<DbMigration>> {
+        Ok(vec![
+            DbMigration { id: 2 },
+            DbMigration { id: 3 },
+            DbMigration { id: 4 },
+        ])
+    }
+
+    fn migrate(&self, migration: &Migration) -> Result<()> {
+        Ok(())
+    }
+}

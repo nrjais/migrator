@@ -1,9 +1,14 @@
+use backend::DummyBackend;
+use executor::sql_file::SqlFileBackend;
 use glob::glob;
 use migration::Migration;
 use std::{convert::identity, error::Error, fs, path::PathBuf};
+use traits::Backend;
 
+pub(crate) mod backend;
 pub(crate) mod executor;
 pub(crate) mod migration;
+pub(crate) mod traits;
 
 pub(crate) type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
@@ -26,9 +31,41 @@ fn read_all_migrations(path: &str) -> Vec<Migration> {
         .expect("failed to read files in the given directory")
 }
 
-fn main() -> Result<()> {
-    let migrations = read_all_migrations(MIGRATIONS_GLOB);
+fn sort_by_order(mut migrations: Vec<Migration>) -> Vec<Migration> {
+    migrations.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
+    migrations
+}
 
-    print!("{:?}", migrations);
+fn main() -> Result<()> {
+    let executor = SqlFileBackend::default();
+    let mut backend = DummyBackend::new(executor);
+    backend.ensure_migration_table()?;
+
+    let sorted_migrations = sort_by_order(read_all_migrations(MIGRATIONS_GLOB));
+
+    let db_migrations = backend.existing_migrations()?;
+
+    let new_migrations = unrun_migrations(sorted_migrations, db_migrations);
+
+    new_migrations
+        .iter()
+        .map(|m| {
+            print!("{:#?}\n", &new_migrations);
+            m
+        })
+        .for_each(|m| {
+            backend.migrate(m).expect("failed to execute migration");
+        });
+
     Ok(())
+}
+
+fn unrun_migrations(
+    sorted_migrations: Vec<Migration>,
+    db_migrations: Vec<traits::DbMigration>,
+) -> Vec<Migration> {
+    sorted_migrations
+        .into_iter()
+        .filter(|m| !db_migrations.iter().any(|dm| dm.id == m.id))
+        .collect()
 }

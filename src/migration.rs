@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub struct Migration {
-    id: u32,
+    pub id: u32,
     change: Vec<ChangeSet>,
 }
 

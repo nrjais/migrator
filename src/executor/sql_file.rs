@@ -1,4 +1,4 @@
-use super::Backend;
+use crate::traits::Executor;
 use crate::Result;
 use parking_lot::Mutex;
 use std::io::Write;
@@ -12,11 +12,14 @@ pub struct SqlFileBackend {
     file: Mutex<File>,
 }
 
+impl Default for SqlFileBackend {
+    fn default() -> Self {
+        Self::new("out.sql").expect("failed to open default sql output file")
+    }
+}
+
 impl SqlFileBackend {
-    fn new<T>(path: T) -> Result<Self>
-    where
-        T: AsRef<Path>,
-    {
+    pub fn new<T: AsRef<Path>>(path: T) -> Result<Self> {
         let file = OpenOptions::new()
             .create(true)
             .write(true)
@@ -30,12 +33,12 @@ impl SqlFileBackend {
 
     pub fn write_query(&self, query: String) -> Result<()> {
         let mut file = self.file.lock();
-        write!(*file, "{}", query)?;
+        file.write(query.as_bytes())?;
         Ok(())
     }
 }
 
-impl Backend for SqlFileBackend {
+impl Executor for SqlFileBackend {
     fn execute(&self, query: String) -> Result<()> {
         self.write_query(query)
     }
