@@ -1,15 +1,12 @@
 id = 1
 
 [[change]]
-dialect = "psql"
 repeatable = true
 [change.up]
 queries = ["create table some_table", "create table some_table2"]
 # sql_file = { path = "./sql/file.sql", new_line_delimeted = true }
 
 [[change]]
-dialect = "mysql"
-
 [change.up]
 queries = ["SELECT * from some_table"]
 [change.down]
@@ -18,8 +15,6 @@ SELECT * from some_table
 """
 
 [[change]]
-dialect = "sqlite"
-
 [change.up]
 sql_file = { path = "./sql/file.sql", new_line_delimited = false }
 
