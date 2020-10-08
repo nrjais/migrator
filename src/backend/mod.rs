@@ -13,7 +13,8 @@ impl<T: Executor> DummyBackend<T> {
 }
 
 impl<T: Executor> Backend for DummyBackend<T> {
-    fn ensure_migration_table(&mut self) -> Result<()> {
+    fn ensure_migration_table(&self) -> Result<()> {
+        self.0.execute("CREATE MIGRATION TABLE".into())?;
         Ok(())
     }
 
@@ -26,6 +27,8 @@ impl<T: Executor> Backend for DummyBackend<T> {
     }
 
     fn migrate(&self, migration: &Migration) -> Result<()> {
+        self.0
+            .execute(format!("Running migration {:?}", migration))?;
         Ok(())
     }
 }
