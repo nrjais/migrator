@@ -9,7 +9,7 @@ pub struct DbMigration {
 }
 
 pub trait Backend {
-    fn ensure_migration_table(&mut self) -> Result<()>;
+    fn ensure_migration_table(&self) -> Result<()>;
     fn existing_migrations(&self) -> Result<Vec<DbMigration>>;
     fn migrate(&self, migration: &Migration) -> Result<()>;
 }
