@@ -8,7 +8,6 @@ pub struct Migration {
 
 #[derive(Deserialize, Debug)]
 pub struct ChangeSet {
-    dialect: Option<String>,
     up: Change,
     down: Option<Change>,
 }
