@@ -4,21 +4,18 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::migration::Migration;
-use crate::separator::runnable_migrations;
-use crate::{traits::Backend, Result};
+use crate::{
+    executor::{Backend, Executor},
+    Result,
+};
 
 pub struct Migrator<T: Backend> {
-    backend: T,
+    executor: Executor<T>,
 }
 
 impl<T: Backend> Migrator<T> {
-    pub fn new(backend: T) -> Self {
-        Self { backend }
-    }
-
-    pub fn init(&self) -> Result<()> {
-        self.backend.ensure_migration_table()?;
-        Ok(())
+    pub fn new(executor: Executor<T>) -> Self {
+        Self { executor }
     }
 
     fn read_migration(path: PathBuf) -> Result<Migration> {
@@ -47,18 +44,7 @@ impl<T: Backend> Migrator<T> {
         Self::sort_by_order(Self::read_all_migrations(path))
     }
 
-    pub fn migrate(&self, path: &str) -> Result<()> {
-        let db_migrations = self.backend.existing_migrations()?;
-        let disk_migrations = Self::disk_migrations(path);
-
-        runnable_migrations(disk_migrations, db_migrations)
-            .iter()
-            .for_each(|m| {
-                print!("{:#?}\n", &m);
-                self.backend
-                    .migrate(m)
-                    .expect("failed to execute migration");
-            });
-        Ok(())
+    pub fn migrate(&mut self, path: &str) -> Result<()> {
+        self.executor.migrate(Self::disk_migrations(path))
     }
 }

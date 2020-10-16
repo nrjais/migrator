@@ -3,13 +3,14 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug)]
 pub struct Migration {
     pub id: u32,
-    change: Vec<ChangeSet>,
+    #[serde(rename="change")]
+    pub changes: Vec<ChangeSet>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ChangeSet {
-    up: Change,
-    down: Option<Change>,
+    pub up: Change,
+    pub down: Option<Change>,
 }
 
 #[derive(Deserialize, Debug)]
