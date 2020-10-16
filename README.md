@@ -5,5 +5,6 @@
 * Rollbacks
 * Multiple DB dialects
 * Repeatable Migrations
-* Contextual Migrations
+* Contextual Migrations at incllusion level
 * File includes in changelog
+* Specify order by using after/before Some ID
