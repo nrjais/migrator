@@ -1,5 +1,3 @@
-use std::convert::identity;
-use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 
@@ -31,10 +29,9 @@ impl<T: Backend> Migrator<T> {
 
     fn read_all_migrations(path: &str) -> Vec<Migration> {
         glob::glob(path)
+            .expect("failed to parse glob pattern")
             .into_iter()
-            .flat_map(identity)
-            .map(|r| r.map_err(|e| Box::new(e) as Box<dyn Error>))
-            .map(|f| f.and_then(Self::read_migration))
+            .map(|f| Self::read_migration(f?) as Result<_>)
             .map(|r| r.ok())
             .collect::<Option<Vec<_>>>()
             .expect("failed to read files in the given directory")
@@ -45,6 +42,7 @@ impl<T: Backend> Migrator<T> {
     }
 
     pub fn migrate(&mut self, path: &str) -> Result<()> {
+        self.executor.init()?;
         self.executor.migrate(Self::disk_migrations(path))
     }
 }
