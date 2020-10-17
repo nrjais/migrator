@@ -7,19 +7,18 @@ use planner::MigrationPlan;
 mod planner;
 
 pub struct DbMigration {
-    pub id: u32,
-}
-
-pub trait DBTransaction {
-    fn execute(&mut self, query: String) -> Result<()>;
-    fn finish(&mut self) -> Result<()>;
+    pub id: i64,
 }
 
 pub trait Backend {
-    type Transaction: DBTransaction;
+    const CHANGELOG_TABLE_CREATION_QUERY: &'static str;
     fn execute(&mut self, query: String) -> Result<()>;
-    fn transaction(&mut self) -> Result<Self::Transaction>;
     fn db_migrations(&mut self) -> Result<Vec<DbMigration>>;
+    fn in_transaction(&mut self, queries: Vec<String>) -> Result<()>;
+
+    fn init(&mut self) -> Result<()> {
+        self.execute(Self::CHANGELOG_TABLE_CREATION_QUERY.into())
+    }
 }
 
 pub struct Executor<T: Backend> {
@@ -44,11 +43,11 @@ impl<T: Backend> Executor<T> {
     }
 
     fn apply_changes(&mut self, queries: Vec<String>) -> Result<()> {
-        let mut transaction = self.backend.transaction()?;
-        for query in queries.into_iter() {
-            transaction.execute(query)?;
-        }
-        Ok(())
+        self.backend.in_transaction(queries)
+    }
+
+    pub fn init(&mut self) -> Result<()> {
+        self.backend.init()
     }
 
     pub fn migrate(&mut self, disk_migrations: Vec<Migration>) -> Result<()> {

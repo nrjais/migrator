@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use backend::postgres::PostgresBackend;
 use executor::Executor;
 use migrator::Migrator;
@@ -9,7 +7,7 @@ mod executor;
 mod migration;
 mod migrator;
 
-pub(crate) type Result<T> = std::result::Result<T, Box<dyn Error>>;
+pub(crate) type Result<T> = anyhow::Result<T>;
 
 const MIGRATIONS_GLOB: &'static str = "examples/migrations/*";
 
