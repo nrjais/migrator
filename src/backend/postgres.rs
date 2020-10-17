@@ -1,8 +1,8 @@
 use super::migration_column_names;
-use crate::executor::{Backend, DbMigration};
+use crate::executor::{Backend, DBMigration};
 use crate::Result;
 use migration_column_names::ID;
-use postgres::{Client, NoTls};
+use postgres::{Client, NoTls, Row};
 
 pub struct PostgresBackend {
     client: Client,
@@ -23,7 +23,7 @@ impl PostgresBackend {
     }
 }
 
-const SELECT_ALL_MIGRATIONS_QUERY: &'static str = "SELECT ID FROM DB_CHANGELOG;";
+const SELECT_ALL_MIGRATIONS_QUERY: &'static str = "SELECT ID FROM DB_CHANGELOG ORDER BY ID;";
 const CHANGELOG_TABLE_CREATION_QUERY: &'static str = "
       CREATE TABLE IF NOT EXISTS DB_CHANGELOG (
         EXECUTION_ORDER serial NOT NULL,
@@ -31,6 +31,12 @@ const CHANGELOG_TABLE_CREATION_QUERY: &'static str = "
         created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
       );
 ";
+
+fn migration_from(row: Row) -> Result<DBMigration> {
+    Ok(DBMigration {
+        id: row.try_get(ID)?,
+    })
+}
 
 impl Backend for PostgresBackend {
     const CHANGELOG_TABLE_CREATION_QUERY: &'static str = CHANGELOG_TABLE_CREATION_QUERY;
@@ -40,12 +46,10 @@ impl Backend for PostgresBackend {
         Ok(())
     }
 
-    fn db_migrations(&mut self) -> Result<Vec<DbMigration>> {
+    fn db_migrations(&mut self) -> Result<Vec<DBMigration>> {
         let mut changes = Vec::new();
         for row in self.client.query(SELECT_ALL_MIGRATIONS_QUERY, &[])? {
-            changes.push(DbMigration {
-                id: row.try_get(ID)?,
-            })
+            changes.push(migration_from(row)?);
         }
 
         Ok(vec![])

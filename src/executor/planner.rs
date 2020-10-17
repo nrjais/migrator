@@ -1,4 +1,4 @@
-use crate::{executor::DbMigration, migration::Migration};
+use crate::{executor::DBMigration, migration::Migration};
 
 pub enum MigrationPlan {
     Pending(Migration),
@@ -6,7 +6,7 @@ pub enum MigrationPlan {
 
 pub fn plan(
     disk_migrations: Vec<Migration>,
-    db_migrations: Vec<DbMigration>,
+    db_migrations: Vec<DBMigration>,
 ) -> Vec<MigrationPlan> {
     disk_migrations
         .into_iter()

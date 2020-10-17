@@ -6,14 +6,14 @@ use planner::MigrationPlan;
 
 mod planner;
 
-pub struct DbMigration {
+pub struct DBMigration {
     pub id: i64,
 }
 
 pub trait Backend {
     const CHANGELOG_TABLE_CREATION_QUERY: &'static str;
     fn execute(&mut self, query: String) -> Result<()>;
-    fn db_migrations(&mut self) -> Result<Vec<DbMigration>>;
+    fn db_migrations(&mut self) -> Result<Vec<DBMigration>>;
     fn in_transaction(&mut self, queries: Vec<String>) -> Result<()>;
 
     fn init(&mut self) -> Result<()> {
