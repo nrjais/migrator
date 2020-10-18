@@ -1,7 +1,7 @@
 id = 12354375645476
+repeatable = true
 
 [[change]]
-repeatable = true
 [change.up]
 queries = ["create table some_table()", "create table some_table2()"]
 # sql_file = { path = "./sql/file.sql", new_line_delimeted = true }
