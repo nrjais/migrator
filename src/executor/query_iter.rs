@@ -17,18 +17,19 @@ impl<'a> QueryIter<'a> {
     }
 
     fn next(&mut self) -> Option<&'a String> {
-        if let Some(change_set) = self.migration.changes.get(self.idx) {
-            self.idx += 1;
-            match change_set.up {
-                Change::Query { ref query } => Some(query),
-                Change::Queries { ref queries } => {
-                    self.inner = Some(queries.iter());
-                    Iterator::next(self)
+        match self.migration.changes.get(self.idx) {
+            Some(change_set) => {
+                self.idx += 1;
+                match change_set.up {
+                    Change::Query { ref query } => Some(query),
+                    Change::Queries { ref queries } => {
+                        self.inner = Some(queries.iter());
+                        Iterator::next(self)
+                    }
+                    Change::SqlFile { .. } => None,
                 }
-                Change::SqlFile { .. } => None,
             }
-        } else {
-            None
+            None => None,
         }
     }
 }
@@ -37,16 +38,12 @@ impl<'a> Iterator for QueryIter<'a> {
     type Item = &'a String;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(ref mut inner) = self.inner {
-            let value = inner.next();
-            if value.is_none() {
+        match self.inner {
+            Some(ref mut inner) => inner.next().map(Option::Some).unwrap_or_else(|| {
                 self.inner = None;
                 Self::next(self)
-            } else {
-                value
-            }
-        } else {
-            Self::next(self)
+            }),
+            None => Self::next(self),
         }
     }
 }
