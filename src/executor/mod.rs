@@ -1,31 +1,23 @@
-use crate::{
-    migration::{Change, Migration},
-    Result,
-};
+use crate::{migration::Migration, Result};
 use planner::MigrationPlan;
+use query_iter::QueryIter;
 
 mod planner;
-
-pub struct DBMigration {
-    pub id: i64,
-    pub desc: String,
-}
-
-pub mod migration_entry_desc {
-    pub const QUERY: &'static str = "query";
-    pub const QUERY_LIST: &'static str = "query_list";
-}
+mod query_iter;
 
 pub struct MigrationEntry {
     pub id: i64,
-    pub desc: String,
 }
 
 pub trait Backend {
     const CHANGELOG_TABLE_CREATION_QUERY: &'static str;
     fn execute(&mut self, query: String) -> Result<()>;
-    fn db_migrations(&mut self) -> Result<Vec<DBMigration>>;
-    fn in_transaction(&mut self, queries: Vec<String>, entry: MigrationEntry) -> Result<()>;
+    fn db_migrations(&mut self) -> Result<Vec<MigrationEntry>>;
+    fn in_transaction<'a>(
+        &mut self,
+        queries: impl Iterator<Item = &'a String>,
+        entry: MigrationEntry,
+    ) -> Result<()>;
 
     fn init(&mut self) -> Result<()> {
         self.execute(Self::CHANGELOG_TABLE_CREATION_QUERY.into())
@@ -42,28 +34,9 @@ impl<T: Backend> Executor<T> {
     }
 
     fn apply(&mut self, migration: Migration) -> Result<()> {
-        for change_set in migration.changes.into_iter() {
-            match change_set.up {
-                Change::Query { query } => self.apply_changes(
-                    vec![query],
-                    migration_entry_desc::QUERY.into(),
-                    migration.id,
-                )?,
-                Change::Queries { queries } => self.apply_changes(
-                    queries,
-                    migration_entry_desc::QUERY_LIST.into(),
-                    migration.id,
-                )?,
-                Change::SqlFile { .. } => todo!(),
-            }
-        }
-
-        Ok(())
-    }
-
-    fn apply_changes(&mut self, queries: Vec<String>, desc: String, id: i64) -> Result<()> {
-        self.backend
-            .in_transaction(queries, MigrationEntry { id, desc })
+        let queries = QueryIter::new(&migration);
+        let entry = MigrationEntry { id: migration.id };
+        self.backend.in_transaction(queries, entry)
     }
 
     pub fn init(&mut self) -> Result<()> {

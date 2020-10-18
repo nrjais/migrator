@@ -1,7 +1,7 @@
 use super::migration_column_names;
-use crate::executor::{Backend, DBMigration, MigrationEntry};
+use crate::executor::{Backend, MigrationEntry};
 use crate::Result;
-use migration_column_names::{DESC, ID};
+use migration_column_names::ID;
 use postgres::{Client, NoTls, Row};
 
 pub struct PostgresBackend {
@@ -28,18 +28,16 @@ const CHANGELOG_TABLE_CREATION_QUERY: &'static str = "
   CREATE TABLE IF NOT EXISTS DB_CHANGELOG (
     ID BIGINT PRIMARY KEY NOT NULL,
     EXECUTION_ORDER SERIAL NOT NULL,
-    DESCRIPTION VARCHAR(15) NOT NULL,
     CREATED_ON TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
   );
 ";
 const INSERT_MIGRATION_ENTRY_QUERY: &'static str = "
-  INSERT INTO DB_CHANGELOG(ID, DESCRIPTION) VALUES ($1, $2);
+  INSERT INTO DB_CHANGELOG(ID) VALUES ($1);
 ";
 
-fn migration_from(row: Row) -> Result<DBMigration> {
-    Ok(DBMigration {
+fn migration_from(row: Row) -> Result<MigrationEntry> {
+    Ok(MigrationEntry {
         id: row.try_get(ID)?,
-        desc: row.try_get(DESC)?,
     })
 }
 
@@ -51,7 +49,7 @@ impl Backend for PostgresBackend {
         Ok(())
     }
 
-    fn db_migrations(&mut self) -> Result<Vec<DBMigration>> {
+    fn db_migrations(&mut self) -> Result<Vec<MigrationEntry>> {
         let mut changes = Vec::new();
         for row in self.client.query(SELECT_ALL_MIGRATIONS_QUERY, &[])? {
             changes.push(migration_from(row)?);
@@ -60,13 +58,17 @@ impl Backend for PostgresBackend {
         Ok(vec![])
     }
 
-    fn in_transaction(&mut self, queries: Vec<String>, entry: MigrationEntry) -> Result<()> {
+    fn in_transaction<'a>(
+        &mut self,
+        queries: impl Iterator<Item = &'a String>,
+        entry: MigrationEntry,
+    ) -> Result<()> {
         let mut transaction = self.client.transaction()?;
-        for query in queries.iter() {
+        for query in queries {
             transaction.execute(query.as_str(), &[])?;
         }
 
-        transaction.execute(INSERT_MIGRATION_ENTRY_QUERY, &[&entry.id, &entry.desc])?;
+        transaction.execute(INSERT_MIGRATION_ENTRY_QUERY, &[&entry.id])?;
 
         transaction.commit()?;
         Ok(())
