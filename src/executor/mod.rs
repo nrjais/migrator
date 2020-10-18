@@ -6,6 +6,7 @@ mod checksum;
 mod planner;
 mod query_iter;
 
+#[derive(Debug, Clone)]
 pub struct MigrationEntry {
     pub id: i64,
     pub checksum: String,
@@ -35,11 +36,11 @@ impl<T: Backend> Executor<T> {
         Self { backend }
     }
 
-    fn apply(&mut self, migration: Migration) -> Result<()> {
+    fn apply(&mut self, migration: Migration, checksum: String) -> Result<()> {
         let queries = QueryIter::new(&migration);
         let entry = MigrationEntry {
             id: migration.id,
-            checksum: checksum::new(&migration),
+            checksum,
         };
         self.backend.in_transaction(queries, entry)
     }
@@ -54,9 +55,13 @@ impl<T: Backend> Executor<T> {
 
         for p_migration in planned_migrations.into_iter() {
             match p_migration {
-                MigrationPlan::Pending(migration) => {
-                    self.apply(migration)?;
+                MigrationPlan::Pending {
+                    checksum,
+                    migration,
+                } => {
+                    self.apply(migration, checksum)?;
                 }
+                MigrationPlan::Diverged { .. } => todo!(),
             }
         }
 
