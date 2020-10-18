@@ -2,11 +2,13 @@ use crate::{migration::Migration, Result};
 use planner::MigrationPlan;
 use query_iter::QueryIter;
 
+mod checksum;
 mod planner;
 mod query_iter;
 
 pub struct MigrationEntry {
     pub id: i64,
+    pub checksum: String,
 }
 
 pub trait Backend {
@@ -35,7 +37,10 @@ impl<T: Backend> Executor<T> {
 
     fn apply(&mut self, migration: Migration) -> Result<()> {
         let queries = QueryIter::new(&migration);
-        let entry = MigrationEntry { id: migration.id };
+        let entry = MigrationEntry {
+            id: migration.id,
+            checksum: checksum::new(&migration),
+        };
         self.backend.in_transaction(queries, entry)
     }
 

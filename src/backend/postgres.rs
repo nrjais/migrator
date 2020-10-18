@@ -1,7 +1,7 @@
 use super::migration_column_names;
 use crate::executor::{Backend, MigrationEntry};
 use crate::Result;
-use migration_column_names::ID;
+use migration_column_names::{CHECKSUM, ID};
 use postgres::{Client, NoTls, Row};
 
 pub struct PostgresBackend {
@@ -28,16 +28,18 @@ const CHANGELOG_TABLE_CREATION_QUERY: &'static str = "
   CREATE TABLE IF NOT EXISTS DB_CHANGELOG (
     ID BIGINT PRIMARY KEY NOT NULL,
     EXECUTION_ORDER SERIAL NOT NULL,
+    CHECKSUM VARCHAR(44) NOT NULL,
     CREATED_ON TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
   );
 ";
 const INSERT_MIGRATION_ENTRY_QUERY: &'static str = "
-  INSERT INTO DB_CHANGELOG(ID) VALUES ($1);
+  INSERT INTO DB_CHANGELOG(ID, CHECKSUM) VALUES ($1, $2);
 ";
 
 fn migration_from(row: Row) -> Result<MigrationEntry> {
     Ok(MigrationEntry {
         id: row.try_get(ID)?,
+        checksum: row.try_get(CHECKSUM)?,
     })
 }
 
@@ -68,7 +70,7 @@ impl Backend for PostgresBackend {
             transaction.execute(query.as_str(), &[])?;
         }
 
-        transaction.execute(INSERT_MIGRATION_ENTRY_QUERY, &[&entry.id])?;
+        transaction.execute(INSERT_MIGRATION_ENTRY_QUERY, &[&entry.id, &entry.checksum])?;
 
         transaction.commit()?;
         Ok(())
