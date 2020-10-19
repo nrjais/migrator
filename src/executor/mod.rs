@@ -61,7 +61,14 @@ impl<T: Backend> Executor<T> {
                 } => {
                     self.apply(migration, checksum)?;
                 }
-                MigrationPlan::Diverged { .. } => todo!(),
+                MigrationPlan::Diverged {
+                    checksum, entry, ..
+                } => anyhow::bail!(
+                    "Diverged migration with ID: {}, having checksum: {}, old checksum: {}",
+                    entry.id,
+                    checksum,
+                    entry.checksum
+                ),
             }
         }
 

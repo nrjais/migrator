@@ -23,7 +23,8 @@ impl PostgresBackend {
     }
 }
 
-const SELECT_ALL_MIGRATIONS_QUERY: &'static str = "SELECT ID FROM DB_CHANGELOG ORDER BY ID;";
+const SELECT_ALL_MIGRATIONS_QUERY: &'static str =
+    "SELECT ID, CHECKSUM FROM DB_CHANGELOG ORDER BY ID;";
 const CHANGELOG_TABLE_CREATION_QUERY: &'static str = "
   CREATE TABLE IF NOT EXISTS DB_CHANGELOG (
     ID BIGINT PRIMARY KEY NOT NULL,
@@ -57,7 +58,7 @@ impl Backend for PostgresBackend {
             changes.push(migration_from(row)?);
         }
 
-        Ok(vec![])
+        Ok(changes)
     }
 
     fn in_transaction<'a>(
