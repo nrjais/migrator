@@ -1,3 +1,4 @@
+use super::Direction;
 use crate::migration::{Change, Migration};
 use std::slice::Iter;
 
@@ -5,14 +6,16 @@ pub struct QueryIter<'a> {
     migration: &'a Migration,
     inner: Option<Iter<'a, String>>,
     idx: usize,
+    direction: Direction,
 }
 
 impl<'a> QueryIter<'a> {
-    pub fn new(migration: &'a Migration) -> Self {
+    pub fn new(migration: &'a Migration, direction: Direction) -> Self {
         Self {
             migration,
             idx: 0,
             inner: None,
+            direction,
         }
     }
 
@@ -20,7 +23,17 @@ impl<'a> QueryIter<'a> {
         match self.migration.changes.get(self.idx) {
             Some(change_set) => {
                 self.idx += 1;
-                match change_set.up {
+                let maybe_change = match self.direction {
+                    Direction::Up => Some(&change_set.up),
+                    Direction::Down => change_set.down.as_ref(),
+                };
+
+                let change = match maybe_change {
+                    Some(change) => change,
+                    None => return self.next(),
+                };
+
+                match change {
                     Change::Query { ref query } => Some(query),
                     Change::Queries { ref queries } => {
                         self.inner = Some(queries.iter());

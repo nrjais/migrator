@@ -1,12 +1,12 @@
 # Migrator
 
 ## Features
-* Checksum verification
+* Checksum verification - Done
 * Rollbacks
 * Multiple DB dialects
 * Repeatable Migrations
-* Contextual Migrations at incllusion level
 * File includes in changelog
+* Contextual Migrations at inclusion level
 * Specify order by using after/before Some ID
 
 

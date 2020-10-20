@@ -15,6 +15,10 @@ fn main() -> Result<()> {
     let backend = PostgresBackend::default();
     let executor = Executor::new(backend);
     let mut migrator = Migrator::new(executor);
-    migrator.migrate(MIGRATIONS_GLOB)?;
+    if true {
+        migrator.migrate(MIGRATIONS_GLOB)?;
+    } else {
+        migrator.rollback(MIGRATIONS_GLOB)?;
+    }
     Ok(())
 }

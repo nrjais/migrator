@@ -45,4 +45,9 @@ impl<T: Backend> Migrator<T> {
         self.executor.init()?;
         self.executor.migrate(Self::disk_migrations(path))
     }
+
+    pub fn rollback(&mut self, path: &str) -> Result<()> {
+        self.executor.init()?;
+        self.executor.rollback(Self::disk_migrations(path))
+    }
 }

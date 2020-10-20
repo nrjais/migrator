@@ -1,5 +1,5 @@
 use super::migration_column_names;
-use crate::executor::{Backend, MigrationEntry};
+use crate::executor::{Direction, Backend, MigrationEntry};
 use crate::Result;
 use migration_column_names::{CHECKSUM, ID};
 use postgres::{Client, NoTls, Row};
@@ -23,8 +23,9 @@ impl PostgresBackend {
     }
 }
 
-const SELECT_ALL_MIGRATIONS_QUERY: &'static str =
-    "SELECT ID, CHECKSUM FROM DB_CHANGELOG ORDER BY ID;";
+const SELECT_ALL_MIGRATIONS_QUERY: &'static str = "
+  SELECT ID, CHECKSUM FROM DB_CHANGELOG ORDER BY ID;
+";
 const CHANGELOG_TABLE_CREATION_QUERY: &'static str = "
   CREATE TABLE IF NOT EXISTS DB_CHANGELOG (
     ID BIGINT PRIMARY KEY NOT NULL,
@@ -36,6 +37,7 @@ const CHANGELOG_TABLE_CREATION_QUERY: &'static str = "
 const INSERT_MIGRATION_ENTRY_QUERY: &'static str = "
   INSERT INTO DB_CHANGELOG(ID, CHECKSUM) VALUES ($1, $2);
 ";
+const REMOVE_MIGRATION_ENTRY_QUERY: &'static str = "DELETE FROM DB_CHANGELOG WHERE ID=$1;";
 
 fn migration_from(row: Row) -> Result<MigrationEntry> {
     Ok(MigrationEntry {
@@ -65,13 +67,21 @@ impl Backend for PostgresBackend {
         &mut self,
         queries: impl Iterator<Item = &'a String>,
         entry: MigrationEntry,
+        action: Direction,
     ) -> Result<()> {
         let mut transaction = self.client.transaction()?;
         for query in queries {
             transaction.execute(query.as_str(), &[])?;
         }
 
-        transaction.execute(INSERT_MIGRATION_ENTRY_QUERY, &[&entry.id, &entry.checksum])?;
+        match action {
+            Direction::Up => {
+                transaction.execute(INSERT_MIGRATION_ENTRY_QUERY, &[&entry.id, &entry.checksum])?;
+            }
+            Direction::Down => {
+                transaction.execute(REMOVE_MIGRATION_ENTRY_QUERY, &[&entry.id])?;
+            }
+        } 
 
         transaction.commit()?;
         Ok(())
