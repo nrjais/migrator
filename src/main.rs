@@ -9,16 +9,20 @@ mod migrator;
 
 pub(crate) type Result<T> = anyhow::Result<T>;
 
-const MIGRATIONS_GLOB: &'static str = "examples/migrations/*";
+const MIGRATIONS_GLOB: &'static str = "*";
 
 fn main() -> Result<()> {
+    let cmd = std::env::args().nth(1).expect("expected command up/down");
+
     let backend = PostgresBackend::default();
     let executor = Executor::new(backend);
     let mut migrator = Migrator::new(executor);
-    if true {
-        migrator.migrate(MIGRATIONS_GLOB)?;
+
+    if cmd == "up" {
+        migrator.migrate(MIGRATIONS_GLOB)
+    } else if cmd == "down" {
+        migrator.rollback(MIGRATIONS_GLOB)
     } else {
-        migrator.rollback(MIGRATIONS_GLOB)?;
+        anyhow::bail!("expected subcommand up/down")
     }
-    Ok(())
 }

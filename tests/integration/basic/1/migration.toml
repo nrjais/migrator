@@ -1,0 +1,5 @@
+id = 12354375645476
+
+[[change]]
+[change.up]
+query = "create table test_table();"
