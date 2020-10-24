@@ -1,8 +1,9 @@
 use anyhow::Result;
-use assert_cmd::Command;
+use assert_cmd::prelude::*;
 use postgres::{Client, NoTls};
 use predicates::prelude::*;
 use std::path::PathBuf;
+use std::{fs, process::Command};
 use walkdir::WalkDir;
 
 fn init() -> Result<()> {
@@ -42,7 +43,6 @@ fn run_migration_in(dir: PathBuf) -> Result<()> {
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
         cmd.arg("up").current_dir(migrations_dir).assert().success();
 
-        let schema = std::fs::read_to_string(dir.as_path().join("schema.sql"))?;
         let mut cmd = Command::new("pg_dump");
         cmd.args(&[
             "-h",
@@ -55,10 +55,23 @@ fn run_migration_in(dir: PathBuf) -> Result<()> {
             "--no-tablespaces",
             "-s",
         ])
-        .env("PGPASSWORD", "password")
-        .assert()
-        .success()
-        .stdout(predicate::eq(schema.as_str()));
+        .env("PGPASSWORD", "password");
+
+        if std::env::var("UPDATE_SCHEMA").is_ok() {
+            cmd.stdout(
+                fs::OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .open(dir.as_path().join("schema.sql"))?,
+            )
+            .spawn()?
+            .wait()?;
+            continue;
+        }
+        let schema = fs::read_to_string(dir.as_path().join("schema.sql"))?;
+        cmd.assert()
+            .success()
+            .stdout(predicate::eq(schema.as_str()));
     }
     Ok(())
 }

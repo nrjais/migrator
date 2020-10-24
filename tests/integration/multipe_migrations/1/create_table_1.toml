@@ -1,0 +1,5 @@
+id = 1
+
+[[change]]
+[change.up]
+queries = ["create table test_table()", "create table test_table2()"]
