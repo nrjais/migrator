@@ -1,12 +1,13 @@
+[[change]]
 id = 12354375645476
 repeatable = true
-
-[[change]]
 [change.up]
 queries = ["create table some_table()", "create table some_table2()"]
 # sql_file = { path = "./sql/file.sql", new_line_delimeted = true }
 
 [[change]]
+id = 12354375645476
+repeatable = true
 [change.up]
 queries = ["create table some_table3()"]
 [change.down]
@@ -15,6 +16,8 @@ SELECT * from some_table
 """
 
 [[change]]
+id = 12354375645476
+repeatable = true
 [change.up]
 query = "create table some_table4()"
 # sql_file = { path = "./sql/file.sql", new_line_delimited = false }

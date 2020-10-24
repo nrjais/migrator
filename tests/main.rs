@@ -1,7 +1,8 @@
 use anyhow::Result;
-use assert_cmd::prelude::*;
+use assert_cmd::Command;
 use postgres::{Client, NoTls};
-use std::{path::PathBuf, process::Command};
+use predicates::prelude::*;
+use std::path::PathBuf;
 use walkdir::WalkDir;
 
 fn init() -> Result<()> {
@@ -15,7 +16,12 @@ fn init() -> Result<()> {
 
 #[test]
 fn test_migrate_up() -> Result<()> {
-    for entry in WalkDir::new("tests/integration").max_depth(1).min_depth(1) {
+    let test_dir_iter = WalkDir::new("tests/integration")
+        .max_depth(1)
+        .min_depth(1)
+        .into_iter();
+
+    for entry in test_dir_iter {
         init()?;
         run_migration_in(entry?.into_path())?;
     }
@@ -23,18 +29,36 @@ fn test_migrate_up() -> Result<()> {
 }
 
 fn run_migration_in(dir: PathBuf) -> Result<()> {
-    let migrations_dir = WalkDir::new(dir)
+    let migrations_dir_iter = WalkDir::new(&dir)
         .max_depth(1)
         .min_depth(1)
         .into_iter()
         .filter_entry(|e| e.file_type().is_dir());
 
-    for entry in migrations_dir {
-        let dir = entry?.into_path();
-        println!("# Running :- {:?}", &dir);
+    for entry in migrations_dir_iter {
+        let migrations_dir = entry?.into_path();
+        println!("# Running :- {:?}", &migrations_dir);
 
         let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
-        cmd.arg("up").current_dir(dir).assert().success();
+        cmd.arg("up").current_dir(migrations_dir).assert().success();
+
+        let schema = std::fs::read_to_string(dir.as_path().join("schema.sql"))?;
+        let mut cmd = Command::new("pg_dump");
+        cmd.args(&[
+            "-h",
+            "localhost",
+            "-U",
+            "postgres",
+            "-n",
+            "public",
+            "-O",
+            "--no-tablespaces",
+            "-s",
+        ])
+        .env("PGPASSWORD", "password")
+        .assert()
+        .success()
+        .stdout(predicate::eq(schema.as_str()));
     }
     Ok(())
 }

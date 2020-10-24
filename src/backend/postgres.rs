@@ -1,5 +1,5 @@
 use super::migration_column_names;
-use crate::executor::{Direction, Backend, MigrationEntry};
+use crate::executor::{Backend, Direction, MigrationEntry};
 use crate::Result;
 use migration_column_names::{CHECKSUM, ID};
 use postgres::{Client, NoTls, Row};
@@ -81,7 +81,7 @@ impl Backend for PostgresBackend {
             Direction::Down => {
                 transaction.execute(REMOVE_MIGRATION_ENTRY_QUERY, &[&entry.id])?;
             }
-        } 
+        }
 
         transaction.commit()?;
         Ok(())
